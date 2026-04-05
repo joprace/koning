@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koning Ninja Samurai</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --ink:#0a0a0e;--ink2:#12121a;--ink3:#1c1c28;
+  --paper:#f2ede6;--paper2:#e8e1d8;
+  --gold:#c9a84c;--gold2:#a8892e;--muted:#6b6a72;
+  --p1:#c0392b;--p2:#2980b9;--p1l:#e74c3c;--p2l:#3498db;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Crimson Pro',Georgia,serif;background:var(--ink);color:var(--paper);height:100vh;position:relative;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:0.35;}
+.kanji-bg{position:fixed;font-family:'Cinzel',serif;font-size:clamp(200px,30vw,420px);font-weight:900;color:rgba(255,255,255,0.02);pointer-events:none;user-select:none;line-height:1;z-index:0;right:-60px;bottom:-80px;letter-spacing:-20px;}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10;transition:opacity 0.5s,transform 0.5s;padding:20px;overflow-y:auto;}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(20px)}
+.deco-line{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px auto;}
+.deco-line.wide{width:200px}
+.game-title{font-family:'Cinzel',serif;font-size:clamp(28px,6vw,64px);font-weight:900;letter-spacing:6px;text-align:center;line-height:1.1;color:var(--paper);}
+.game-subtitle{font-family:'Crimson Pro',serif;font-style:italic;font-size:clamp(13px,2vw,18px);color:var(--gold);letter-spacing:3px;text-align:center;}
+.screen-title{font-family:'Cinzel',serif;font-size:clamp(14px,2.5vw,22px);font-weight:600;letter-spacing:5px;color:var(--gold);text-align:center;text-transform:uppercase;}
+.menu-btn{position:relative;font-family:'Cinzel',serif;font-size:clamp(11px,1.8vw,15px);font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--paper);background:transparent;border:1px solid rgba(201,168,76,0.35);padding:14px 40px;cursor:pointer;transition:all 0.25s;min-width:220px;overflow:hidden;}
+.menu-btn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform 0.3s ease;z-index:-1;}
+.menu-btn:hover{color:var(--ink);border-color:var(--gold)}.menu-btn:hover::before{transform:scaleX(1)}
+.menu-btn.disabled{opacity:0.3;cursor:not-allowed;pointer-events:none}
+.badge{display:inline-block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;padding:2px 8px;border:1px solid rgba(201,168,76,0.4);color:var(--gold);margin-left:10px;vertical-align:middle;}
+.option-cards{display:flex;gap:20px;margin-top:24px;flex-wrap:wrap;justify-content:center;}
+.option-card{width:clamp(140px,22vw,200px);border:1px solid rgba(201,168,76,0.25);padding:28px 20px 24px;cursor:pointer;text-align:center;transition:all 0.25s;background:rgba(255,255,255,0.02);position:relative;}
+.option-card::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:2px;background:var(--gold);transition:width 0.3s;}
+.option-card:hover{background:rgba(201,168,76,0.06);border-color:var(--gold)}.option-card:hover::after{width:60%}
+.option-card.selected{background:rgba(201,168,76,0.1);border-color:var(--gold)}.option-card.selected::after{width:60%}
+.option-icon{font-size:clamp(28px,5vw,44px);margin-bottom:10px;display:block;filter:grayscale(0.3)}
+.option-title{font-family:'Cinzel',serif;font-size:clamp(11px,1.8vw,14px);letter-spacing:3px;font-weight:600;color:var(--paper);margin-bottom:6px}
+.option-desc{font-size:clamp(11px,1.5vw,13px);font-style:italic;color:var(--muted);line-height:1.5}
+.back-btn{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 0;transition:color 0.2s;text-transform:uppercase;margin-top:16px;}
+.back-btn:hover{color:var(--gold)}.back-btn::before{content:'← '}
+
+/* GAME LAYOUT */
+#game-screen{flex-direction:row;align-items:stretch;padding:0;gap:0;overflow:hidden;}
+#game-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;min-width:0;}
+#game-sidebar{width:210px;min-width:190px;border-left:1px solid rgba(201,168,76,0.15);display:flex;flex-direction:column;padding:16px 14px;gap:10px;overflow-y:auto;background:rgba(0,0,0,0.2);}
+#game-header{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:430px;margin-bottom:8px;}
+.player-badge{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;padding:6px 14px;border:1px solid;transition:all 0.3s;}
+.player-badge.p1{border-color:var(--p1);color:var(--p1l)}.player-badge.p2{border-color:var(--p2);color:var(--p2l)}
+.player-badge.p1.active{background:rgba(192,57,43,0.15);font-weight:600;}
+.player-badge.p2.active{background:rgba(41,128,185,0.15);font-weight:600;}
+.turn-center{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--gold);text-align:center;}
+#phase-bar{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:rgba(201,168,76,0.7);text-align:center;text-transform:uppercase;margin-bottom:4px;}
+
+/* BOARD */
+#board-wrap{position:relative;width:min(calc(100vw - 270px),calc(100vh - 140px),430px);max-width:430px;aspect-ratio:1;}
+#board{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;width:100%;height:100%;background:rgba(201,168,76,0.08);padding:3px;border:1px solid rgba(201,168,76,0.2);}
+.cell{background:rgba(242,237,230,0.04);border:0.5px solid rgba(201,168,76,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;transition:background 0.15s;aspect-ratio:1;}
+.cell:hover{background:rgba(242,237,230,0.08)}
+.cell.hl{background:rgba(41,128,185,0.22);border-color:rgba(52,152,219,0.55)}
+.cell.atk{background:rgba(192,57,43,0.22);border-color:rgba(231,76,60,0.55)}
+.cell.sel{background:rgba(201,168,76,0.18);border-color:rgba(201,168,76,0.65)}
+.cell .coord{position:absolute;top:2px;left:3px;font-size:7px;color:rgba(201,168,76,0.3);font-family:'Cinzel',serif;pointer-events:none;line-height:1;}
+.piece-el{font-size:clamp(14px,3vw,22px);line-height:1;user-select:none;position:absolute;display:flex;align-items:center;justify-content:center;width:100%;height:100%;cursor:pointer;pointer-events:none;z-index:2;transition:opacity 0.1s;}
+.piece-el.p1{color:var(--p1l);text-shadow:0 0 10px rgba(231,76,60,0.35);}
+.piece-el.p2{color:var(--p2l);text-shadow:0 0 10px rgba(52,152,219,0.35);}
+.armor-dot{position:absolute;bottom:2px;right:2px;width:6px;height:6px;border-radius:50%;}
+.armor-on{background:var(--gold)}.armor-off{background:rgba(107,106,114,0.4)}
+
+/* FLYING PIECE */
+#flying-piece{
+  position:fixed;pointer-events:none;z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;font-size:26px;line-height:1;
+  opacity:0;will-change:left,top;
+}
+#flying-piece.fly-anim{
+  animation:flypiece var(--fly-dur,320ms) cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes flypiece{
+  0%{opacity:1;transform:scale(1.3)}
+  80%{opacity:1;transform:scale(1.1)}
+  100%{opacity:0;transform:scale(0.9)}
+}
+
+/* SIDEBAR */
+.s-panel{border:1px solid rgba(201,168,76,0.15);padding:11px 10px;background:rgba(255,255,255,0.02);}
+.s-panel h3{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2.5px;color:var(--gold);text-transform:uppercase;margin-bottom:8px;}
+#dice-face-small{width:42px;height:42px;border:1px solid rgba(201,168,76,0.3);border-radius:5px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:4px;gap:2px;margin:0 auto 7px;background:rgba(201,168,76,0.04);}
+.dot{border-radius:50%;background:var(--paper);width:100%;height:100%;}
+.dot.off{background:transparent}
+.s-btn{display:block;width:100%;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:8px 4px;background:transparent;border:1px solid rgba(201,168,76,0.3);color:var(--paper);cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.s-btn:hover:not(:disabled){background:rgba(201,168,76,0.1);border-color:var(--gold)}
+.s-btn:disabled{opacity:0.3;cursor:not-allowed}
+
+/* AUTO-ROLL TOGGLE */
+.toggle-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid rgba(201,168,76,0.15);background:rgba(255,255,255,0.02);cursor:pointer;transition:border-color 0.2s;}
+.toggle-row:hover{border-color:rgba(201,168,76,0.35)}
+.toggle-track{width:32px;height:17px;border:1px solid rgba(201,168,76,0.35);border-radius:9px;position:relative;flex-shrink:0;transition:background 0.25s,border-color 0.25s;background:transparent;}
+.toggle-thumb{width:13px;height:13px;border-radius:50%;background:var(--muted);position:absolute;top:1px;left:1px;transition:left 0.22s,background 0.22s;}
+.toggle-track.on{background:rgba(201,168,76,0.18);border-color:var(--gold);}
+.toggle-track.on .toggle-thumb{left:16px;background:var(--gold);}
+.toggle-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;flex:1;user-select:none;transition:color 0.2s;}
+.toggle-row:hover .toggle-label{color:var(--paper2)}
+.toggle-track.on+.toggle-label{color:var(--gold)}
+
+.choice-wrap{display:none;flex-direction:column;gap:4px;margin-top:6px}
+.choice-wrap.show{display:flex}
+.choice-label{font-size:10px;font-style:italic;color:var(--gold);margin-bottom:2px;text-align:center}
+.cap-row{display:flex;flex-wrap:wrap;gap:3px;min-height:18px}
+.cap-piece{font-size:14px;opacity:0.45}
+#log{font-size:11px;font-style:italic;color:var(--muted);line-height:1.6;max-height:110px;overflow-y:auto;}
+#log p{border-bottom:0.5px solid rgba(255,255,255,0.04);padding:2px 0}
+.legend{display:flex;flex-direction:column;gap:3px}
+.legend-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted)}
+.legend-sym{width:16px;text-align:center;font-size:13px}
+.sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;gap:6px}
+#ai-thinking{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--p2l);text-align:center;opacity:0;transition:opacity 0.3s;text-transform:uppercase;}
+#ai-thinking.show{opacity:1}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3)}
+
+/* ═══════════════════════════
+   CINEMATIC DICE OVERLAY
+═══════════════════════════ */
+#dice-overlay{
+  position:fixed;inset:0;z-index:800;
+  display:flex;align-items:center;justify-content:center;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity 0.2s;
+}
+#dice-overlay.show{opacity:1;pointer-events:all}
+#dice-veil{
+  position:absolute;inset:0;
+  background:rgba(0,0,0,0);
+  transition:background 0.3s;
+}
+#dice-overlay.show #dice-veil{background:rgba(0,0,0,0.62)}
+#dice-stage{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;gap:18px;
+  transform:scale(0.85);opacity:0;
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1),opacity 0.25s;
+}
+#dice-overlay.show #dice-stage{transform:scale(1);opacity:1}
+#dice-player-label{
+  font-family:'Cinzel',serif;font-size:11px;letter-spacing:5px;
+  text-transform:uppercase;opacity:0.75;
+}
+#dice-big-wrap{
+  perspective:500px;
+}
+#dice-big{
+  width:130px;height:130px;
+  border-radius:20px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(3,1fr);
+  padding:15px;gap:7px;
+  border:2px solid;
+  position:relative;
+  transform-style:preserve-3d;
+  transition:border-color 0.2s,background 0.2s;
+}
+/* the tumble sequence */
+#dice-big.spin{animation:dicespin 0.55s ease-in-out;}
+@keyframes dicespin{
+  0%  {transform:rotateX(0deg)   rotateY(0deg)   scale3d(1,1,1)}
+  20% {transform:rotateX(-40deg) rotateY(25deg)  scale3d(1.08,1.08,1.08)}
+  45% {transform:rotateX(35deg)  rotateY(-30deg) scale3d(0.92,0.92,0.92)}
+  65% {transform:rotateX(-20deg) rotateY(40deg)  scale3d(1.04,1.04,1.04)}
+  82% {transform:rotateX(15deg)  rotateY(-15deg) scale3d(0.97,0.97,0.97)}
+  100%{transform:rotateX(0deg)   rotateY(0deg)   scale3d(1,1,1)}
+}
+.big-dot{border-radius:50%;width:100%;height:100%;}
+.big-dot.off{background:transparent!important}
+#dice-result-val{
+  font-family:'Cinzel',serif;font-size:52px;font-weight:900;line-height:1;
+  opacity:0;transform:translateY(10px) scale(0.7);
+  transition:opacity 0.25s,transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+#dice-result-val.pop{opacity:1;transform:translateY(0) scale(1)}
+#dice-tap-hint{
+  font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;
+  color:rgba(255,255,255,0.3);text-transform:uppercase;
+  opacity:0;transition:opacity 0.3s;cursor:pointer;padding:4px 12px;
+}
+#dice-tap-hint.show{opacity:1}
+#dice-tap-hint:hover{color:var(--gold)}
+/* Corner accents on dice stage */
+#dice-stage::before,#dice-stage::after{
+  content:'';position:absolute;width:24px;height:24px;border-style:solid;border-color:var(--gold);opacity:0.4;
+}
+#dice-stage::before{top:-16px;left:-16px;border-width:1px 0 0 1px}
+#dice-stage::after{bottom:-16px;right:-16px;border-width:0 1px 1px 0}
+
+/* WIN */
+#win-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:900;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.4s;}
+#win-overlay.show{opacity:1;pointer-events:all}
+#win-box{border:1px solid rgba(201,168,76,0.4);padding:48px 60px;text-align:center;background:var(--ink2);position:relative;}
+#win-box::before,#win-box::after{content:'';position:absolute;width:20px;height:20px;border-color:var(--gold);border-style:solid;}
+#win-box::before{top:8px;left:8px;border-width:1px 0 0 1px}
+#win-box::after{bottom:8px;right:8px;border-width:0 1px 1px 0}
+.win-icon{font-size:48px;margin-bottom:16px}
+.win-title{font-family:'Cinzel',serif;font-size:28px;font-weight:900;letter-spacing:4px;margin-bottom:8px}
+.win-sub{font-style:italic;color:var(--muted);font-size:14px;margin-bottom:24px}
+
+/* SIX POPUP */
+#six-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:850;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s;}
+#six-overlay.show{opacity:1;pointer-events:all}
+#six-box{border:1px solid rgba(201,168,76,0.45);padding:36px 44px;text-align:center;background:var(--ink2);position:relative;max-width:420px;width:90%;}
+#six-box::before,#six-box::after{content:'';position:absolute;width:18px;height:18px;border-color:var(--gold);border-style:solid;}
+#six-box::before{top:8px;left:8px;border-width:1px 0 0 1px}
+#six-box::after{bottom:8px;right:8px;border-width:0 1px 1px 0}
+.six-title{font-family:'Cinzel',serif;font-size:20px;font-weight:900;letter-spacing:4px;color:var(--gold);margin-bottom:6px}
+.six-sub{font-style:italic;color:var(--muted);font-size:13px;margin-bottom:22px}
+.six-btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.six-big-btn{font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;padding:13px 22px;border:1px solid rgba(201,168,76,0.4);color:var(--paper);background:transparent;cursor:pointer;transition:all 0.2s;text-transform:uppercase;position:relative;overflow:hidden;}
+.six-big-btn::before{content:'';position:absolute;inset:0;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform 0.25s;z-index:-1;}
+.six-big-btn:hover:not(:disabled){color:var(--ink);border-color:var(--gold)}.six-big-btn:hover:not(:disabled)::before{transform:scaleX(1)}
+.six-big-btn:disabled{opacity:0.3;cursor:not-allowed;border-color:rgba(201,168,76,0.15);}
+.six-skip-btn{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;color:var(--muted);background:none;border:none;cursor:pointer;padding:6px 0;transition:color 0.2s;text-transform:uppercase;display:block;margin:8px auto 0;}
+.six-skip-btn:hover{color:var(--gold)}
+.six-piece-icon{font-size:20px;display:block;margin-bottom:4px}
+.six-piece-name{font-size:9px;letter-spacing:1.5px;display:block}
+
+/* DIRECTION highlight — shown on immediate neighbour cells */
+.cell.dir{background:rgba(201,168,76,0.18);border-color:rgba(201,168,76,0.6);cursor:pointer;}
+.cell.dir:hover{background:rgba(201,168,76,0.32);}
+.dir-arrow{position:absolute;font-size:13px;color:rgba(201,168,76,0.9);pointer-events:none;z-index:3;}
+
+@media(max-width:580px){
+  #game-screen{flex-direction:column}
+  #game-sidebar{width:100%;min-width:0;flex-direction:row;flex-wrap:wrap;border-left:none;border-top:1px solid rgba(201,168,76,0.15);padding:10px;gap:8px;max-height:200px;overflow-y:auto;}
+  #game-sidebar .s-panel{flex:1;min-width:120px}
+  #game-sidebar .sidebar-bottom{flex-direction:row;flex-wrap:wrap;gap:6px;width:100%}
+  #board-wrap{width:min(calc(100vw - 16px),calc(100vh - 340px));max-width:360px}
+}
+
+/* ══════════════════════════════════════════
+   TOP BANNER (persistent, always on top)
+══════════════════════════════════════════ */
+#top-banner{
+  position:fixed;top:0;left:0;right:0;height:48px;
+  background:rgba(10,10,14,0.92);
+  border-bottom:1px solid rgba(201,168,76,0.18);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;z-index:600;
+  transition:opacity 0.3s,transform 0.3s;
+}
+#top-banner.hidden-banner{opacity:0;pointer-events:none;transform:translateY(-100%)}
+.banner-brand{font-family:'Cinzel',serif;font-size:11px;letter-spacing:4px;color:rgba(201,168,76,0.7);text-transform:uppercase;white-space:nowrap;}
+.banner-icons{display:flex;align-items:center;gap:6px;}
+.ban-btn{
+  position:relative;width:38px;height:38px;border-radius:2px;
+  background:transparent;border:1px solid transparent;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:border-color 0.2s,background 0.2s;color:var(--paper);
+  font-size:17px;
+}
+.ban-btn:hover{border-color:rgba(201,168,76,0.3);background:rgba(201,168,76,0.06);}
+.ban-btn.active{border-color:rgba(201,168,76,0.5);background:rgba(201,168,76,0.1);color:var(--gold);}
+.ban-badge{
+  position:absolute;top:4px;right:4px;min-width:15px;height:15px;padding:0 3px;
+  border-radius:8px;background:#e74c3c;
+  font-family:'Cinzel',serif;font-size:8px;font-weight:600;
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  opacity:0;transform:scale(0.5);transition:opacity 0.2s,transform 0.2s;
+}
+.ban-badge.show{opacity:1;transform:scale(1);}
+.ban-sep{width:1px;height:22px;background:rgba(201,168,76,0.15);margin:0 4px;}
+
+/* ══════════════════════════════════════════
+   SIDE DRAWER PANELS (profile, inbox, search)
+══════════════════════════════════════════ */
+.drawer{
+  position:fixed;top:48px;right:0;bottom:0;width:340px;max-width:95vw;
+  background:rgba(12,12,20,0.97);
+  border-left:1px solid rgba(201,168,76,0.18);
+  z-index:590;display:flex;flex-direction:column;
+  transform:translateX(100%);opacity:0;
+  transition:transform 0.32s cubic-bezier(0.4,0,0.2,1),opacity 0.25s;
+  overflow:hidden;
+}
+.drawer.open{transform:translateX(0);opacity:1;}
+.drawer-veil{
+  position:fixed;inset:0;top:48px;background:rgba(0,0,0,0);
+  z-index:580;pointer-events:none;
+  transition:background 0.3s;
+}
+.drawer-veil.show{background:rgba(0,0,0,0.55);pointer-events:all;}
+.drawer-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 14px;border-bottom:1px solid rgba(201,168,76,0.12);
+  flex-shrink:0;
+}
+.drawer-title{font-family:'Cinzel',serif;font-size:12px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;}
+.drawer-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:2px 6px;transition:color 0.2s;line-height:1;}
+.drawer-close:hover{color:var(--paper);}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 20px;}
+.drawer-body::-webkit-scrollbar{width:3px}
+.drawer-body::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2)}
+
+/* ══════════════════════════════════════════
+   PROFILE DRAWER
+══════════════════════════════════════════ */
+.profile-avatar{
+  width:72px;height:72px;border-radius:50%;
+  border:2px solid rgba(201,168,76,0.4);
+  background:rgba(201,168,76,0.08);
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;margin:0 auto 14px;position:relative;
+}
+.profile-avatar-ring{
+  position:absolute;inset:-5px;border-radius:50%;
+  border:1px solid rgba(201,168,76,0.2);
+}
+.profile-name{font-family:'Cinzel',serif;font-size:16px;letter-spacing:3px;color:var(--paper);text-align:center;margin-bottom:4px;}
+.profile-email{font-style:italic;color:var(--muted);font-size:12px;text-align:center;margin-bottom:20px;}
+.profile-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;border:1px solid rgba(201,168,76,0.15);margin-bottom:20px;}
+.stat-box{padding:14px 8px;text-align:center;background:rgba(255,255,255,0.02);}
+.stat-val{font-family:'Cinzel',serif;font-size:20px;font-weight:900;color:var(--gold);display:block;line-height:1;}
+.stat-lbl{font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;display:block;margin-top:4px;}
+.profile-section{margin-bottom:18px;}
+.profile-section-title{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2.5px;color:rgba(201,168,76,0.6);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.profile-section-title::after{content:'';flex:1;height:1px;background:rgba(201,168,76,0.12);}
+.profile-field-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.profile-field{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.18);color:var(--paper);font-family:'Crimson Pro',serif;font-size:14px;padding:9px 12px;outline:none;transition:border-color 0.2s;}
+.profile-field:focus{border-color:rgba(201,168,76,0.5);}
+.profile-field::placeholder{color:var(--muted);font-style:italic;}
+.profile-field:read-only{color:var(--muted);cursor:default;}
+.p-action-btn{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;padding:9px 14px;background:transparent;border:1px solid rgba(201,168,76,0.3);color:var(--paper);cursor:pointer;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
+.p-action-btn:hover{background:rgba(201,168,76,0.1);border-color:var(--gold);color:var(--gold);}
+.logout-btn{width:100%;font-family:'Cinzel',serif;font-size:10px;letter-spacing:2px;padding:11px;background:transparent;border:1px solid rgba(192,57,43,0.3);color:#e74c3c;cursor:pointer;transition:all 0.2s;text-transform:uppercase;margin-top:8px;}
+.logout-btn:hover{background:rgba(192,57,43,0.1);border-color:#e74c3c;}
+.p-status{font-size:11px;font-style:italic;min-height:16px;margin-top:6px;}
+.p-status.ok{color:#2ecc71}.p-status.err{color:#e74c3c}
+
+/* ══════════════════════════════════════════
+   INBOX DRAWER
+══════════════════════════════════════════ */
+.inbox-tabs{display:flex;border-bottom:1px solid rgba(201,168,76,0.12);margin:-18px -20px 18px;flex-shrink:0;}
+.inbox-tab{flex:1;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;padding:12px 8px;background:none;border:none;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:color 0.2s;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.inbox-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.inbox-empty{font-style:italic;color:var(--muted);font-size:13px;text-align:center;padding:30px 0;}
+.inbox-item{
+  border:1px solid rgba(201,168,76,0.1);padding:13px 14px;
+  margin-bottom:8px;background:rgba(255,255,255,0.02);
+  transition:border-color 0.2s;
+}
+.inbox-item:hover{border-color:rgba(201,168,76,0.22);}
+.inbox-item-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.inbox-avatar{width:28px;height:28px;border-radius:50%;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.25);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;}
+.inbox-from{font-family:'Cinzel',serif;font-size:11px;letter-spacing:1px;color:var(--paper);flex:1;}
+.inbox-time{font-size:10px;font-style:italic;color:var(--muted);}
+.inbox-msg{font-size:12px;font-style:italic;color:var(--muted);margin-bottom:10px;line-height:1.5;}
+.inbox-actions{display:flex;gap:6px;}
+.inbox-accept{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:7px 14px;border:1px solid rgba(41,128,185,0.4);color:#3498db;background:none;cursor:pointer;transition:all 0.2s;text-transform:uppercase;flex:1;}
+.inbox-accept:hover{background:rgba(41,128,185,0.12);}
+.inbox-decline{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:7px 14px;border:1px solid rgba(192,57,43,0.3);color:#e74c3c;background:none;cursor:pointer;transition:all 0.2s;text-transform:uppercase;flex:1;}
+.inbox-decline:hover{background:rgba(192,57,43,0.08);}
+.inbox-sent-status{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:4px 10px;border:1px solid rgba(201,168,76,0.2);color:var(--muted);display:inline-block;}
+.inbox-sent-status.accepted{border-color:rgba(46,204,113,0.4);color:#2ecc71;}
+.inbox-sent-status.declined{border-color:rgba(192,57,43,0.3);color:#e74c3c;}
+.inbox-sent-status.pending{border-color:rgba(201,168,76,0.3);color:var(--gold);}
+
+/* ══════════════════════════════════════════
+   SEARCH / FIND OPPONENT DRAWER
+══════════════════════════════════════════ */
+.search-bar-wrap{display:flex;gap:8px;margin-bottom:16px;}
+.search-field{flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.2);color:var(--paper);font-family:'Crimson Pro',serif;font-size:14px;padding:10px 13px;outline:none;transition:border-color 0.2s;}
+.search-field:focus{border-color:rgba(201,168,76,0.5);}
+.search-field::placeholder{color:var(--muted);font-style:italic;}
+.search-go{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;padding:10px 16px;background:transparent;border:1px solid rgba(201,168,76,0.35);color:var(--paper);cursor:pointer;transition:all 0.2s;text-transform:uppercase;}
+.search-go:hover{background:rgba(201,168,76,0.1);border-color:var(--gold);color:var(--gold);}
+.search-results{display:flex;flex-direction:column;gap:8px;}
+.search-result-item{
+  border:1px solid rgba(201,168,76,0.1);padding:12px 14px;
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,0.02);transition:border-color 0.2s;
+}
+.search-result-item:hover{border-color:rgba(201,168,76,0.25);}
+.result-avatar{width:34px;height:34px;border-radius:50%;background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.result-info{flex:1;min-width:0;}
+.result-name{font-family:'Cinzel',serif;font-size:12px;letter-spacing:2px;color:var(--paper);display:block;}
+.result-meta{font-size:11px;font-style:italic;color:var(--muted);display:block;margin-top:2px;}
+.challenge-mini-btn{font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;padding:7px 12px;border:1px solid rgba(201,168,76,0.3);color:var(--gold);background:none;cursor:pointer;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
+.challenge-mini-btn:hover{background:rgba(201,168,76,0.1);}
+.challenge-mini-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.search-hint{font-style:italic;color:var(--muted);font-size:13px;text-align:center;padding:24px 0;line-height:1.7;}
+.search-status{font-size:11px;font-style:italic;min-height:16px;margin-bottom:10px;}
+.search-status.ok{color:#2ecc71}.search-status.err{color:#e74c3c}
+
+/* ══════════════════════════════════════════
+   AUTH SCREEN
+══════════════════════════════════════════ */
+.auth-box{border:1px solid rgba(201,168,76,0.22);padding:40px 44px;background:rgba(10,10,18,0.92);position:relative;width:100%;max-width:400px;z-index:1;}
+.auth-box::before,.auth-box::after{content:'';position:absolute;width:20px;height:20px;border-color:var(--gold);border-style:solid;opacity:0.5;}
+.auth-box::before{top:8px;left:8px;border-width:1px 0 0 1px}
+.auth-box::after{bottom:8px;right:8px;border-width:0 1px 1px 0}
+.auth-field{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.18);color:var(--paper);font-family:'Crimson Pro',serif;font-size:15px;padding:11px 14px;margin-bottom:12px;outline:none;transition:border-color 0.2s;}
+.auth-field:focus{border-color:rgba(201,168,76,0.55);}
+.auth-field::placeholder{color:var(--muted);font-style:italic;}
+.auth-error{font-size:12px;font-style:italic;color:#e74c3c;min-height:18px;margin-bottom:8px;text-align:center;letter-spacing:0.5px;}
+.auth-switch{font-size:13px;font-style:italic;color:var(--muted);margin-top:14px;text-align:center;}
+.auth-switch a{color:var(--gold);cursor:pointer;text-decoration:none;}
+.auth-switch a:hover{text-decoration:underline;}
+.auth-tab-row{display:flex;margin-bottom:24px;border-bottom:1px solid rgba(201,168,76,0.15);}
+.auth-tab{flex:1;font-family:'Cinzel',serif;font-size:11px;letter-spacing:2px;padding:10px;background:none;border:none;color:var(--muted);cursor:pointer;text-transform:uppercase;transition:color 0.2s;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.auth-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.auth-divider{display:flex;align-items:center;gap:10px;margin:14px 0;color:var(--muted);font-size:12px;font-style:italic;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(201,168,76,0.12);}
+
+/* Status helpers */
+.status-msg{font-size:12px;font-style:italic;color:var(--muted);min-height:16px;text-align:center;margin-top:6px;}
+.status-msg.ok{color:#2ecc71}.status-msg.err{color:#e74c3c}
+
+/* Screens need top padding when banner is visible */
+.screen.has-banner{padding-top:68px;}
+
+/* Adjust game screen for banner */
+#game-screen.has-banner{top:48px;}
+</style>
+</head>
+<body>
+<div class="kanji-bg">忍侍王</div>
+
+<!-- ══════════════════════════════════════════════
+     PERSISTENT TOP BANNER
+══════════════════════════════════════════════ -->
+<div id="top-banner" class="hidden-banner">
+  <span class="banner-brand">忍 Koning Ninja Samurai</span>
+  <div class="banner-icons">
+    <!-- Search players -->
+    <button class="ban-btn" id="ban-search" title="Find opponent" onclick="toggleDrawer('search')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <div class="ban-sep"></div>
+    <!-- Inbox -->
+    <button class="ban-btn" id="ban-inbox" title="Inbox" onclick="toggleDrawer('inbox')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-6l-2 3H10L8 12H2"/><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/></svg>
+      <span class="ban-badge" id="inbox-badge">0</span>
+    </button>
+    <div class="ban-sep"></div>
+    <!-- Profile -->
+    <button class="ban-btn" id="ban-profile" title="Profile" onclick="toggleDrawer('profile')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Drawer backdrop veil -->
+<div class="drawer-veil" id="drawer-veil" onclick="closeAllDrawers()"></div>
+
+<!-- ══════════════════════════════════════════════
+     PROFILE DRAWER
+══════════════════════════════════════════════ -->
+<div class="drawer" id="drawer-profile">
+  <div class="drawer-header">
+    <span class="drawer-title">Profile</span>
+    <button class="drawer-close" onclick="closeAllDrawers()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="profile-avatar">
+      <span id="profile-avatar-icon">⚔</span>
+      <div class="profile-avatar-ring"></div>
+    </div>
+    <div class="profile-name" id="profile-display-name">—</div>
+    <div class="profile-email" id="profile-display-email">—</div>
+
+    <div class="profile-stats">
+      <div class="stat-box">
+        <span class="stat-val" id="stat-wins">0</span>
+        <span class="stat-lbl">Wins</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-val" id="stat-losses">0</span>
+        <span class="stat-lbl">Losses</span>
+      </div>
+      <div class="stat-box">
+        <span class="stat-val" id="stat-played">0</span>
+        <span class="stat-lbl">Played</span>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Change Username</div>
+      <div class="profile-field-row">
+        <input class="profile-field" id="profile-new-username" placeholder="New username…" maxlength="20">
+        <button class="p-action-btn" onclick="changeUsername()">Save</button>
+      </div>
+      <div class="p-status" id="profile-username-status"></div>
+    </div>
+
+    <div class="profile-section">
+      <div class="profile-section-title">Change Password</div>
+      <input class="profile-field" id="profile-new-pass" type="password" placeholder="New password…" style="width:100%;margin-bottom:8px">
+      <button class="p-action-btn" style="width:100%" onclick="changePassword()">Update Password</button>
+      <div class="p-status" id="profile-pass-status"></div>
+    </div>
+
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     INBOX DRAWER
+══════════════════════════════════════════════ -->
+<div class="drawer" id="drawer-inbox">
+  <div class="drawer-header">
+    <span class="drawer-title">Inbox</span>
+    <button class="drawer-close" onclick="closeAllDrawers()">✕</button>
+  </div>
+  <div class="drawer-body" style="padding-top:0">
+    <div class="inbox-tabs" id="inbox-tabs">
+      <button class="inbox-tab active" onclick="switchInboxTab('received')" id="itab-received">Received</button>
+      <button class="inbox-tab" onclick="switchInboxTab('sent')" id="itab-sent">Sent</button>
+    </div>
+
+    <!-- Received -->
+    <div id="inbox-received-panel">
+      <div class="inbox-empty" id="inbox-received-empty">No challenges received</div>
+      <div id="inbox-received-list"></div>
+    </div>
+
+    <!-- Sent -->
+    <div id="inbox-sent-panel" style="display:none">
+      <div class="inbox-empty" id="inbox-sent-empty">No challenges sent</div>
+      <div id="inbox-sent-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     SEARCH / FIND OPPONENT DRAWER
+══════════════════════════════════════════════ -->
+<div class="drawer" id="drawer-search">
+  <div class="drawer-header">
+    <span class="drawer-title">Find Opponent</span>
+    <button class="drawer-close" onclick="closeAllDrawers()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <div class="search-bar-wrap">
+      <input class="search-field" id="player-search-input" placeholder="Search by username…" maxlength="30"
+        onkeydown="if(event.key==='Enter')searchPlayers()">
+      <button class="search-go" onclick="searchPlayers()">Search</button>
+    </div>
+    <div class="search-status" id="search-status"></div>
+    <div id="search-results">
+      <div class="search-hint">Search for a player by username<br>to challenge them to a match.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     AUTH SCREEN (Login / Register)
+══════════════════════════════════════════════ -->
+<div class="screen hidden" id="screen-auth">
+  <div style="text-align:center;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;">
+    <div class="game-subtitle" style="margin-bottom:6px;letter-spacing:5px">Koning Ninja Samurai</div>
+    <div style="font-size:22px;margin-bottom:6px;">忍侍王</div>
+    <div class="deco-line wide"></div>
+
+    <div class="auth-box" style="margin-top:10px;">
+      <div class="auth-tab-row">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
+        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="auth-login-form">
+        <input class="auth-field" id="login-email" type="email" placeholder="Email address" autocomplete="email">
+        <input class="auth-field" id="login-pass" type="password" placeholder="Password"
+          autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="auth-error" id="login-error"></div>
+        <button class="menu-btn" style="width:100%;min-width:unset" onclick="doLogin()" id="login-btn">Enter the Arena</button>
+        <div class="auth-divider">or</div>
+        <div class="auth-switch">No account? <a onclick="switchAuthTab('register')">Register here</a></div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="auth-register-form" style="display:none">
+        <input class="auth-field" id="reg-username" type="text" placeholder="Choose a username" maxlength="20" autocomplete="off">
+        <input class="auth-field" id="reg-email" type="email" placeholder="Email address" autocomplete="email">
+        <input class="auth-field" id="reg-pass" type="password" placeholder="Password (min 6 chars)"
+          autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()">
+        <div class="auth-error" id="reg-error"></div>
+        <button class="menu-btn" style="width:100%;min-width:unset" onclick="doRegister()" id="reg-btn">Create Account</button>
+        <div class="auth-switch" style="margin-top:14px">Already registered? <a onclick="switchAuthTab('login')">Login</a></div>
+      </div>
+    </div>
+
+    <button class="back-btn" style="margin-top:20px" onclick="goTo('screen-title')">Play without account</button>
+    <div style="margin-top:10px;font-size:10px;font-style:italic;color:rgba(107,106,114,0.5);letter-spacing:1px;">
+      Add your Supabase keys in the script to enable accounts
+    </div>
+  </div>
+</div>
+<div class="screen" id="screen-title">
+  <div style="text-align:center;z-index:1">
+    <div class="game-subtitle" style="margin-bottom:14px;font-size:13px;letter-spacing:5px">The Art of Strategy</div>
+    <div class="game-title">Koning<br>Ninja<br>Samurai</div>
+    <div class="deco-line wide"></div>
+    <div style="font-style:italic;color:var(--muted);font-size:14px;margin-bottom:40px;letter-spacing:1px">A game of kings, shadows, and steel</div>
+    <button class="menu-btn" onclick="goToLobbyOrAuth()">Begin</button>
+    <div style="margin-top:14px">
+      <button class="back-btn" style="display:inline-block" onclick="goTo('screen-mode')">Play offline</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODE -->
+<div class="screen hidden" id="screen-mode">
+  <div style="text-align:center;z-index:1;width:100%;max-width:600px">
+    <div class="screen-title">Choose Game Mode</div>
+    <div class="deco-line"></div>
+    <div class="option-cards">
+      <div class="option-card selected" id="mode-normal" onclick="selectMode('normal')">
+        <span class="option-icon">⚔</span>
+        <div class="option-title">Normal</div>
+        <div class="option-desc">Classic rules. King, Ninja &amp; Samurai on a 6×6 board.</div>
+      </div>
+      <div class="option-card disabled" style="cursor:not-allowed">
+        <span class="option-icon" style="opacity:0.3">🌊</span>
+        <div class="option-title" style="opacity:0.3">Blitz <span class="badge">soon</span></div>
+        <div class="option-desc" style="opacity:0.3">Fast-paced, no revives.</div>
+      </div>
+      <div class="option-card disabled" style="cursor:not-allowed">
+        <span class="option-icon" style="opacity:0.3">🏯</span>
+        <div class="option-title" style="opacity:0.3">Siege <span class="badge">soon</span></div>
+        <div class="option-desc" style="opacity:0.3">Hold the castle.</div>
+      </div>
+    </div>
+    <div style="margin-top:32px"><button class="menu-btn" onclick="goTo('screen-opponent')">Continue</button></div>
+    <button class="back-btn" onclick="backFromMode()">Back</button>
+  </div>
+</div>
+
+<!-- OPPONENT -->
+<div class="screen hidden" id="screen-opponent">
+  <div style="text-align:center;z-index:1;width:100%;max-width:500px">
+    <div class="screen-title">Choose Opponent</div>
+    <div class="deco-line"></div>
+    <div style="font-style:italic;color:var(--muted);font-size:14px;margin-bottom:8px">Normal Mode</div>
+    <div class="option-cards" style="justify-content:center">
+      <div class="option-card" id="opp-human" onclick="selectOpponent('human')">
+        <span class="option-icon">⚔</span>
+        <div class="option-title">Local Duel</div>
+        <div class="option-desc">Two players, one device. Pass and play.</div>
+      </div>
+      <div class="option-card" id="opp-ai" onclick="selectOpponent('ai')">
+        <span class="option-icon">🤖</span>
+        <div class="option-title">vs AI</div>
+        <div class="option-desc">Challenge the machine. You are Player 1.</div>
+      </div>
+    </div>
+    <div style="margin-top:32px"><button class="menu-btn" id="opp-next-btn" disabled onclick="startGame()">Start Game</button></div>
+    <button class="back-btn" onclick="goTo('screen-mode')">Back</button>
+  </div>
+</div>
+
+<!-- GAME -->
+<div class="screen hidden" id="game-screen">
+  <div id="game-main">
+    <div id="game-header">
+      <div class="player-badge p1 active" id="badge-p1">Player 1</div>
+      <div class="turn-center" id="turn-center">YOUR TURN</div>
+      <div class="player-badge p2" id="badge-p2">Player 2</div>
+    </div>
+    <div id="phase-bar">Select a piece</div>
+    <div id="board-wrap"><div id="board"></div></div>
+  </div>
+
+  <div id="game-sidebar">
+    <div class="s-panel">
+      <h3>Dice</h3>
+      <div id="dice-face-small"></div>
+      <div id="ai-thinking">AI thinking…</div>
+      <button class="s-btn" id="roll-btn" onclick="rollDice()" disabled>Roll Dice</button>
+    </div>
+
+    <div class="toggle-row" id="autoroll-row" onclick="toggleAutoRoll()">
+      <div class="toggle-track" id="autoroll-track">
+        <div class="toggle-thumb"></div>
+      </div>
+      <span class="toggle-label" id="autoroll-label">Auto Roll</span>
+    </div>
+
+    <div class="s-panel">
+      <h3>Captured</h3>
+      <div style="font-size:9px;letter-spacing:1px;color:var(--p1l);margin-bottom:3px">P1 LOST</div>
+      <div class="cap-row" id="p1-captured"></div>
+      <div style="font-size:9px;letter-spacing:1px;color:var(--p2l);margin-top:8px;margin-bottom:3px">P2 LOST</div>
+      <div class="cap-row" id="p2-captured"></div>
+    </div>
+
+    <div class="s-panel">
+      <h3>Pieces</h3>
+      <div class="legend">
+        <div class="legend-row"><span class="legend-sym">♛</span> King — 1 tile any dir</div>
+        <div class="legend-row"><span class="legend-sym">☯</span> Ninja — diagonal, jump</div>
+        <div class="legend-row"><span class="legend-sym">⚔</span> Samurai — horiz/vert</div>
+      </div>
+    </div>
+
+    <div class="s-panel" style="flex:1">
+      <h3>Log</h3>
+      <div id="log"></div>
+    </div>
+
+    <div class="sidebar-bottom">
+      <button class="s-btn" onclick="goTo('screen-title');cleanupGame()">Menu</button>
+      <button class="s-btn" onclick="restartGame()">Restart</button>
+    </div>
+  </div>
+</div>
+
+<!-- FLYING PIECE (movement animation layer) -->
+<div id="flying-piece"></div>
+
+<!-- DICE OVERLAY -->
+<div id="dice-overlay">
+  <div id="dice-veil" onclick="dismissDice()"></div>
+  <div id="dice-stage">
+    <div id="dice-player-label">Rolling…</div>
+    <div id="dice-big-wrap">
+      <div id="dice-big"></div>
+    </div>
+    <div id="dice-result-val"></div>
+    <div id="dice-tap-hint" onclick="dismissDice()">Tap to continue</div>
+  </div>
+</div>
+
+<!-- SIX POPUP -->
+<div id="six-overlay">
+  <div id="six-box">
+    <div class="six-title">⚄ Rolled a Six!</div>
+    <div class="six-sub" id="six-sub">Choose your reward</div>
+    <div class="deco-line"></div>
+    <div class="six-btn-row" id="six-walk-row">
+      <button class="six-big-btn" onclick="sixChooseWalk()">
+        <span class="six-piece-icon">🚶</span>
+        <span class="six-piece-name">Walk 6 Steps</span>
+      </button>
+    </div>
+    <div id="six-revive-section" style="display:none">
+      <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;color:var(--gold);margin-bottom:10px">— OR REVIVE —</div>
+      <div class="six-btn-row" id="six-revive-btns"></div>
+    </div>
+    <button class="six-skip-btn" onclick="sixChooseSkip()">↩ Skip — pass turn</button>
+  </div>
+</div>
+
+<!-- WIN -->
+<div id="win-overlay">
+  <div id="win-box">
+    <div class="win-icon">♛</div>
+    <div class="win-title" id="win-title">Player 1 Wins</div>
+    <div class="win-sub">The enemy King has fallen.</div>
+    <div class="deco-line"></div>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+      <button class="menu-btn" style="min-width:140px;font-size:11px" onclick="restartGame()">Play Again</button>
+      <button class="menu-btn" style="min-width:140px;font-size:11px" onclick="goTo('screen-title');cleanupGame();document.getElementById('win-overlay').classList.remove('show')">Main Menu</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════
+   SUPABASE CONFIGURATION
+   1. Create free project → https://supabase.com
+   2. Project Settings → API → paste URL and anon key below
+   3. Run the SQL block at the bottom of this script
+════════════════════════════════════════════════════ */
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY';
+
+let _sb = null;
+function getSB(){
+  if(!_sb && SUPABASE_URL !== 'YOUR_SUPABASE_URL')
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  return _sb;
+}
+
+/* ══ Auth / profile state ══ */
+let currentUser    = null;
+let currentProfile = null;
+let realtimeChannel = null;
+
+/* ══════════════════════════════════════════════════════
+   BANNER — show/hide and update
+══════════════════════════════════════════════════════ */
+function showBanner(){
+  document.getElementById('top-banner').classList.remove('hidden-banner');
+}
+function hideBanner(){
+  document.getElementById('top-banner').classList.add('hidden-banner');
+  closeAllDrawers();
+}
+function updateBannerProfile(){
+  if(!currentProfile) return;
+  // update profile drawer
+  const initials = currentProfile.username ? currentProfile.username[0].toUpperCase() : '?';
+  document.getElementById('profile-avatar-icon').textContent = initials;
+  document.getElementById('profile-display-name').textContent = currentProfile.username || '—';
+  document.getElementById('profile-display-email').textContent = currentUser?.email || '—';
+  document.getElementById('stat-wins').textContent   = currentProfile.wins   || 0;
+  document.getElementById('stat-losses').textContent = currentProfile.losses || 0;
+  document.getElementById('stat-played').textContent = (currentProfile.wins||0)+(currentProfile.losses||0);
+}
+
+/* ══════════════════════════════════════════════════════
+   DRAWER SYSTEM
+══════════════════════════════════════════════════════ */
+let activeDrawer = null;
+const DRAWERS = ['profile','inbox','search'];
+
+function toggleDrawer(name){
+  if(activeDrawer === name){ closeAllDrawers(); return; }
+  closeAllDrawers(false);
+  activeDrawer = name;
+  document.getElementById('drawer-'+name).classList.add('open');
+  document.getElementById('drawer-veil').classList.add('show');
+  // highlight active button
+  DRAWERS.forEach(d=>{
+    document.getElementById('ban-'+d)?.classList.toggle('active', d===name);
+  });
+  if(name==='inbox')  loadInbox();
+  if(name==='profile') updateBannerProfile();
+}
+
+function closeAllDrawers(clearActive=true){
+  DRAWERS.forEach(d=>{
+    document.getElementById('drawer-'+d)?.classList.remove('open');
+    document.getElementById('ban-'+d)?.classList.remove('active');
+  });
+  document.getElementById('drawer-veil').classList.remove('show');
+  if(clearActive) activeDrawer = null;
+}
+
+/* ══════════════════════════════════════════════════════
+   AUTH TAB
+══════════════════════════════════════════════════════ */
+function switchAuthTab(tab){
+  document.getElementById('auth-login-form').style.display    = tab==='login'    ? '' : 'none';
+  document.getElementById('auth-register-form').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('tab-login').classList.toggle('active',   tab==='login');
+  document.getElementById('tab-register').classList.toggle('active',tab==='register');
+  document.getElementById('login-error').textContent='';
+  document.getElementById('reg-error').textContent='';
+}
+
+/* ══════════════════════════════════════════════════════
+   DECIDE WHERE TO GO ON "BEGIN"
+══════════════════════════════════════════════════════ */
+async function goToLobbyOrAuth(){
+  const sb = getSB();
+  if(!sb){ goTo('screen-mode'); return; }
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){ await loadUserSession(session.user); goTo('screen-mode'); }
+  else { goTo('screen-auth'); }
+}
+
+/* ══════════════════════════════════════════════════════
+   LOGIN
+══════════════════════════════════════════════════════ */
+async function doLogin(){
+  const sb = getSB();
+  if(!sb){ setAuthErr('login','Supabase not configured.'); return; }
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if(!email||!pass){ setAuthErr('login','Please fill in all fields.'); return; }
+  setAuthBtn('login-btn','Entering…',true);
+  const { data, error } = await sb.auth.signInWithPassword({ email, password:pass });
+  setAuthBtn('login-btn','Enter the Arena',false);
+  if(error){ setAuthErr('login', error.message); return; }
+  await loadUserSession(data.user);
+  goTo('screen-mode');
+}
+
+/* ══════════════════════════════════════════════════════
+   REGISTER
+══════════════════════════════════════════════════════ */
+async function doRegister(){
+  const sb = getSB();
+  if(!sb){ setAuthErr('reg','Supabase not configured.'); return; }
+  const username = document.getElementById('reg-username').value.trim().replace(/\s+/g,'');
+  const email    = document.getElementById('reg-email').value.trim();
+  const pass     = document.getElementById('reg-pass').value;
+  if(!username||!email||!pass){ setAuthErr('reg','Please fill in all fields.'); return; }
+  if(username.length<3){ setAuthErr('reg','Username must be at least 3 characters.'); return; }
+  if(!/^[a-zA-Z0-9_]+$/.test(username)){ setAuthErr('reg','Username: letters, numbers, _ only.'); return; }
+  if(pass.length<6){ setAuthErr('reg','Password must be at least 6 characters.'); return; }
+  const { data:existing } = await sb.from('profiles').select('id').eq('username',username).maybeSingle();
+  if(existing){ setAuthErr('reg','Username already taken.'); return; }
+  setAuthBtn('reg-btn','Creating…',true);
+  const { data, error } = await sb.auth.signUp({ email, password:pass });
+  if(error){ setAuthBtn('reg-btn','Create Account',false); setAuthErr('reg',error.message); return; }
+  const { error:profErr } = await sb.from('profiles').insert({ id:data.user.id, username, wins:0, losses:0 });
+  setAuthBtn('reg-btn','Create Account',false);
+  if(profErr){ setAuthErr('reg',profErr.message); return; }
+  await loadUserSession(data.user);
+  goTo('screen-mode');
+}
+
+/* ══════════════════════════════════════════════════════
+   LOAD SESSION (called after login/register/restore)
+══════════════════════════════════════════════════════ */
+async function loadUserSession(user){
+  currentUser = user;
+  const sb = getSB();
+  const { data } = await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  currentProfile = data;
+  showBanner();
+  updateBannerProfile();
+  subscribeInbox();
+  refreshInboxBadge();
+}
+
+/* ══════════════════════════════════════════════════════
+   LOGOUT
+══════════════════════════════════════════════════════ */
+async function doLogout(){
+  const sb = getSB(); if(!sb) return;
+  closeAllDrawers();
+  if(realtimeChannel){ sb.removeChannel(realtimeChannel); realtimeChannel=null; }
+  await sb.auth.signOut();
+  currentUser=null; currentProfile=null;
+  hideBanner();
+  goTo('screen-title');
+}
+
+/* ══════════════════════════════════════════════════════
+   PROFILE — change username / password
+══════════════════════════════════════════════════════ */
+async function changeUsername(){
+  const sb = getSB(); if(!sb||!currentUser) return;
+  const newName = document.getElementById('profile-new-username').value.trim();
+  if(!newName||newName.length<3){ setPStatus('username','Username too short.','err'); return; }
+  if(!/^[a-zA-Z0-9_]+$/.test(newName)){ setPStatus('username','Letters, numbers, _ only.','err'); return; }
+  const { data:ex } = await sb.from('profiles').select('id').eq('username',newName).maybeSingle();
+  if(ex){ setPStatus('username','Username already taken.','err'); return; }
+  const { error } = await sb.from('profiles').update({ username:newName }).eq('id',currentUser.id);
+  if(error){ setPStatus('username',error.message,'err'); return; }
+  currentProfile.username = newName;
+  updateBannerProfile();
+  document.getElementById('profile-new-username').value='';
+  setPStatus('username','Username updated!','ok');
+}
+async function changePassword(){
+  const sb = getSB(); if(!sb) return;
+  const pass = document.getElementById('profile-new-pass').value;
+  if(!pass||pass.length<6){ setPStatus('pass','Password must be at least 6 characters.','err'); return; }
+  const { error } = await sb.auth.updateUser({ password:pass });
+  if(error){ setPStatus('pass',error.message,'err'); return; }
+  document.getElementById('profile-new-pass').value='';
+  setPStatus('pass','Password updated!','ok');
+}
+function setPStatus(field, msg, type){
+  const el = document.getElementById('profile-'+field+'-status');
+  el.textContent=msg; el.className='p-status '+(type||'');
+  if(type==='ok') setTimeout(()=>{if(el.textContent===msg)el.textContent='';},3000);
+}
+
+/* ══════════════════════════════════════════════════════
+   INBOX — load received + sent challenges
+══════════════════════════════════════════════════════ */
+let inboxCurrentTab = 'received';
+function switchInboxTab(tab){
+  inboxCurrentTab = tab;
+  document.getElementById('itab-received').classList.toggle('active',tab==='received');
+  document.getElementById('itab-sent').classList.toggle('active',tab==='sent');
+  document.getElementById('inbox-received-panel').style.display = tab==='received'?'':'none';
+  document.getElementById('inbox-sent-panel').style.display     = tab==='sent'?'':'none';
+  loadInbox();
+}
+async function loadInbox(){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  if(inboxCurrentTab==='received') await loadInboxReceived(sb);
+  else await loadInboxSent(sb);
+}
+async function loadInboxReceived(sb){
+  const { data } = await sb.from('challenges')
+    .select('id,from_username,created_at,status')
+    .eq('to_user_id',currentUser.id)
+    .eq('status','pending')
+    .order('created_at',{ascending:false});
+  const list=document.getElementById('inbox-received-list');
+  const empty=document.getElementById('inbox-received-empty');
+  list.innerHTML='';
+  if(!data||!data.length){ empty.style.display=''; return; }
+  empty.style.display='none';
+  data.forEach(ch=>{
+    const d=new Date(ch.created_at);
+    const timeStr=d.toLocaleDateString(undefined,{month:'short',day:'numeric'})+' '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+    list.innerHTML+=`
+    <div class="inbox-item" id="inbox-item-${ch.id}">
+      <div class="inbox-item-header">
+        <div class="inbox-avatar">${escHtml(ch.from_username[0].toUpperCase())}</div>
+        <div class="inbox-from">${escHtml(ch.from_username)}</div>
+        <div class="inbox-time">${timeStr}</div>
+      </div>
+      <div class="inbox-msg">⚔ Challenges you to a match</div>
+      <div class="inbox-actions">
+        <button class="inbox-accept"  onclick="acceptChallenge('${ch.id}','${escHtml(ch.from_username)}')">Accept</button>
+        <button class="inbox-decline" onclick="declineChallenge('${ch.id}')">Decline</button>
+      </div>
+    </div>`;
+  });
+  updateInboxBadge(data.length);
+}
+async function loadInboxSent(sb){
+  const { data } = await sb.from('challenges')
+    .select('id,to_username,created_at,status')
+    .eq('from_user_id',currentUser.id)
+    .order('created_at',{ascending:false})
+    .limit(20);
+  const list=document.getElementById('inbox-sent-list');
+  const empty=document.getElementById('inbox-sent-empty');
+  list.innerHTML='';
+  if(!data||!data.length){ empty.style.display=''; return; }
+  empty.style.display='none';
+  data.forEach(ch=>{
+    const d=new Date(ch.created_at);
+    const timeStr=d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    const statusClass=ch.status==='pending'?'pending':ch.status==='accepted'?'accepted':'declined';
+    list.innerHTML+=`
+    <div class="inbox-item">
+      <div class="inbox-item-header">
+        <div class="inbox-avatar">${escHtml(ch.to_username[0].toUpperCase())}</div>
+        <div class="inbox-from">${escHtml(ch.to_username)}</div>
+        <div class="inbox-time">${timeStr}</div>
+      </div>
+      <div class="inbox-msg">Challenge sent</div>
+      <span class="inbox-sent-status ${statusClass}">${ch.status.toUpperCase()}</span>
+    </div>`;
+  });
+}
+async function refreshInboxBadge(){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  const { count } = await sb.from('challenges')
+    .select('id',{count:'exact',head:true})
+    .eq('to_user_id',currentUser.id).eq('status','pending');
+  updateInboxBadge(count||0);
+}
+function updateInboxBadge(n){
+  const badge=document.getElementById('inbox-badge');
+  badge.textContent=n>9?'9+':n;
+  badge.classList.toggle('show',n>0);
+}
+
+/* ── Realtime: listen for new challenges ── */
+function subscribeInbox(){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  if(realtimeChannel){ sb.removeChannel(realtimeChannel); }
+  realtimeChannel = sb.channel('inbox-'+currentUser.id)
+    .on('postgres_changes',{event:'*',schema:'public',table:'challenges',
+      filter:`to_user_id=eq.${currentUser.id}`},
+      ()=>{ refreshInboxBadge(); if(activeDrawer==='inbox') loadInbox(); })
+    .subscribe();
+}
+
+/* ══════════════════════════════════════════════════════
+   ACCEPT / DECLINE CHALLENGE
+══════════════════════════════════════════════════════ */
+async function acceptChallenge(id,fromUsername){
+  const sb=getSB(); if(!sb) return;
+  await sb.from('challenges').update({status:'accepted'}).eq('id',id);
+  document.getElementById('inbox-item-'+id)?.remove();
+  refreshInboxBadge();
+  closeAllDrawers();
+  // Start game (local hot-seat until realtime game logic added)
+  selectedOpponent='human';
+  goTo('game-screen'); initGame();
+  setTimeout(()=>addLog(`Match vs ${fromUsername} accepted!`),200);
+}
+async function declineChallenge(id){
+  const sb=getSB(); if(!sb) return;
+  await sb.from('challenges').update({status:'declined'}).eq('id',id);
+  document.getElementById('inbox-item-'+id)?.remove();
+  refreshInboxBadge();
+  loadInbox();
+}
+
+/* ══════════════════════════════════════════════════════
+   PLAYER SEARCH + SEND CHALLENGE
+══════════════════════════════════════════════════════ */
+async function searchPlayers(){
+  const sb=getSB(); if(!sb||!currentProfile) return;
+  const q=document.getElementById('player-search-input').value.trim();
+  if(!q){ setSearchStatus('Enter a username to search.','err'); return; }
+  setSearchStatus('Searching…','');
+  const { data } = await sb.from('profiles')
+    .select('id,username,wins,losses')
+    .ilike('username','%'+q+'%')
+    .neq('id',currentUser.id)
+    .limit(10);
+  const resultsEl=document.getElementById('search-results');
+  setSearchStatus('','');
+  if(!data||!data.length){
+    resultsEl.innerHTML='<div class="search-hint">No players found matching "'+escHtml(q)+'"</div>';
+    return;
+  }
+  resultsEl.innerHTML='';
+  data.forEach(p=>{
+    const played=(p.wins||0)+(p.losses||0);
+    const wr=played>0?Math.round((p.wins/played)*100)+'% WR':'No games';
+    resultsEl.innerHTML+=`
+    <div class="search-result-item">
+      <div class="result-avatar">${escHtml(p.username[0].toUpperCase())}</div>
+      <div class="result-info">
+        <span class="result-name">${escHtml(p.username)}</span>
+        <span class="result-meta">${p.wins||0}W · ${p.losses||0}L · ${wr}</span>
+      </div>
+      <button class="challenge-mini-btn" id="ch-btn-${p.id}"
+        onclick="sendChallengeToUser('${p.id}','${escHtml(p.username)}')">Challenge</button>
+    </div>`;
+  });
+}
+async function sendChallengeToUser(toId, toUsername){
+  const sb=getSB(); if(!sb||!currentProfile) return;
+  const btn=document.getElementById('ch-btn-'+toId);
+  if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  // Check for existing pending
+  const { data:ex } = await sb.from('challenges').select('id')
+    .eq('from_user_id',currentUser.id).eq('to_user_id',toId).eq('status','pending').maybeSingle();
+  if(ex){
+    if(btn){ btn.disabled=false; btn.textContent='Sent ✓'; }
+    setSearchStatus('Challenge already pending.','err'); return;
+  }
+  const { error } = await sb.from('challenges').insert({
+    from_user_id:  currentUser.id,
+    from_username: currentProfile.username,
+    to_user_id:    toId,
+    to_username:   toUsername,
+    status:        'pending'
+  });
+  if(error){ if(btn){ btn.disabled=false; btn.textContent='Challenge'; } setSearchStatus('Could not send.','err'); return; }
+  if(btn){ btn.textContent='Sent ✓'; }
+  setSearchStatus(`Challenge sent to ${toUsername}! ⚔`,'ok');
+}
+function setSearchStatus(msg,type){
+  const el=document.getElementById('search-status');
+  el.textContent=msg; el.className='search-status '+(type||'');
+  if(type==='ok') setTimeout(()=>{if(el.textContent===msg)el.textContent='';},4000);
+}
+
+/* ══════════════════════════════════════════════════════
+   SHARED HELPERS
+══════════════════════════════════════════════════════ */
+function setAuthErr(form,msg){
+  document.getElementById(form==='login'?'login-error':'reg-error').textContent=msg;
+}
+function setAuthBtn(id,label,disabled){
+  const btn=document.getElementById(id); btn.textContent=label; btn.disabled=disabled;
+}
+function escHtml(s){
+  return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function backFromMode(){
+  goTo('screen-title');
+}
+
+/* ── On page load: restore session if available ── */
+window.addEventListener('DOMContentLoaded', async()=>{
+  const sb=getSB(); if(!sb) return;
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session) await loadUserSession(session.user);
+});
+
+/*
+  ════════════════════════════════════════════════════════
+  SUPABASE SQL SETUP — paste into SQL Editor:
+  https://app.supabase.com → your project → SQL Editor
+  ════════════════════════════════════════════════════════
+
+  create table profiles (
+    id uuid references auth.users on delete cascade primary key,
+    username text unique not null,
+    wins integer default 0,
+    losses integer default 0,
+    created_at timestamptz default now()
+  );
+  alter table profiles enable row level security;
+  create policy "Profiles viewable by all" on profiles for select using (true);
+  create policy "Users insert own profile" on profiles for insert with check (auth.uid()=id);
+  create policy "Users update own profile" on profiles for update using (auth.uid()=id);
+
+  create table challenges (
+    id uuid default gen_random_uuid() primary key,
+    from_user_id uuid references profiles(id) on delete cascade,
+    from_username text not null,
+    to_user_id uuid references profiles(id) on delete cascade,
+    to_username text not null,
+    status text default 'pending' check (status in ('pending','accepted','declined')),
+    created_at timestamptz default now()
+  );
+  alter table challenges enable row level security;
+  create policy "Send challenges" on challenges for insert with check (auth.uid()=from_user_id);
+  create policy "View own challenges" on challenges for select using (auth.uid()=from_user_id or auth.uid()=to_user_id);
+  create policy "Update received challenges" on challenges for update using (auth.uid()=to_user_id);
+
+  -- Then: Database → Replication → enable realtime on `challenges` table
+  ════════════════════════════════════════════════════════
+*/
+
+/* ═══════════════════ NAVIGATION ═══════════════════ */
+let selectedMode='normal',selectedOpponent=null,autoRoll=false;
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  // banner visible on all screens except title and auth
+  const noBanner=['screen-title','screen-auth'];
+  if(currentProfile && !noBanner.includes(id)) showBanner();
+  else if(noBanner.includes(id) && !currentProfile) hideBanner();
+  // game screen needs top offset
+  document.getElementById('game-screen').classList.toggle('has-banner', id==='game-screen' && !!currentProfile);
+}
+function selectMode(m){
+  selectedMode=m;
+  document.querySelectorAll('[id^="mode-"]').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('mode-'+m).classList.add('selected');
+}
+function selectOpponent(o){
+  selectedOpponent=o;
+  document.getElementById('opp-human').classList.toggle('selected',o==='human');
+  document.getElementById('opp-ai').classList.toggle('selected',o==='ai');
+  document.getElementById('opp-next-btn').disabled=false;
+}
+function startGame(){if(!selectedOpponent)return;goTo('game-screen');initGame();}
+function cleanupGame(){
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('dice-overlay').classList.remove('show');
+  document.getElementById('six-overlay').classList.remove('show');
+}
+function toggleAutoRoll(){
+  autoRoll=!autoRoll;
+  document.getElementById('autoroll-track').classList.toggle('on',autoRoll);
+  addLog(autoRoll?'Auto-roll on':'Auto-roll off');
+  if(autoRoll&&(G.phase==='roll'||G.phase==='ninja-attack')&&!G._autoRolling){
+    G._autoRolling=true;
+    setTimeout(()=>{G._autoRolling=false;rollDice();},300);
+  }
+}
+
+/* ═══════════════════ GAME STATE ═══════════════════ */
+const SYM={KING:'♛',NINJA:'☯',SAMURAI:'⚔'};
+const P1C='#e74c3c',P2C='#3498db';
+let G={};
+
+function initGame(){
+  G={
+    board:Array(6).fill(null).map(()=>Array(6).fill(null)),
+    cur:1,phase:'select',selected:null,
+    highlights:[],atkhighlights:[],dirHighlights:[],
+    dice:null,targetCell:null,targetDir:null,ninjaAttackTarget:null,
+    captured:{1:[],2:[]},reviveMode:false,_autoRolling:false,aiLocked:false
+  };
+  G.pieces={
+    1:{
+      king:    {type:'KING',   pl:1,alive:true,row:5,col:5,armorUsed:false},
+      samurai: {type:'SAMURAI',pl:1,alive:true,row:4,col:5,armorUsed:false},
+      ninja:   {type:'NINJA',  pl:1,alive:true,row:5,col:4,armorUsed:false}
+    },
+    2:{
+      king:    {type:'KING',   pl:2,alive:true,row:0,col:0,armorUsed:false},
+      samurai: {type:'SAMURAI',pl:2,alive:true,row:1,col:0,armorUsed:false},
+      ninja:   {type:'NINJA',  pl:2,alive:true,row:0,col:1,armorUsed:false}
+    }
+  };
+  syncBoard();renderBoard();updateHUD();
+  document.getElementById('p1-captured').innerHTML='';
+  document.getElementById('p2-captured').innerHTML='';
+  document.getElementById('log').innerHTML='';
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('dice-overlay').classList.remove('show');
+  document.getElementById('six-overlay').classList.remove('show');
+  renderSmallDice(null);
+  document.getElementById('badge-p2').textContent=selectedOpponent==='ai'?'AI':'Player 2';
+}
+function restartGame(){cleanupGame();initGame();}
+
+function syncBoard(){
+  G.board=Array(6).fill(null).map(()=>Array(6).fill(null));
+  for(let p=1;p<=2;p++) for(let k in G.pieces[p]){const pc=G.pieces[p][k];if(pc.alive)G.board[pc.row][pc.col]=pc;}
+}
+
+/* ═══════════════════ BOARD RENDER ═══════════════════ */
+const DIR_ARROW={'-1,0':'↑','1,0':'↓','0,-1':'←','0,1':'→','-1,-1':'↖','-1,1':'↗','1,-1':'↙','1,1':'↘'};
+function renderBoard(){
+  const bd=document.getElementById('board');
+  bd.innerHTML='';
+  const dh=G.dirHighlights||[];
+  for(let r=0;r<6;r++){
+    for(let c=0;c<6;c++){
+      const cell=document.createElement('div');
+      cell.className='cell';
+      cell.dataset.r=r;cell.dataset.c=c;
+      const coord=document.createElement('span');
+      coord.className='coord';
+      coord.textContent=String.fromCharCode(65+c)+(r+1);
+      cell.appendChild(coord);
+      const dhMatch=dh.find(d=>d.r===r&&d.c===c);
+      if(dhMatch){
+        cell.classList.add('dir');
+        const arrow=document.createElement('span');
+        arrow.className='dir-arrow';
+        arrow.textContent=DIR_ARROW[dhMatch.dr+','+dhMatch.dc]||'•';
+        cell.appendChild(arrow);
+      }
+      if(G.atkhighlights.some(h=>h[0]===r&&h[1]===c)) cell.classList.add('atk');
+      if(G.selected&&G.selected.row===r&&G.selected.col===c) cell.classList.add('sel');
+      const pc=G.board[r][c];
+      if(pc){
+        const div=document.createElement('div');
+        div.className='piece-el p'+pc.pl;
+        div.textContent=SYM[pc.type];
+        if(pc.type==='SAMURAI'){
+          const dot=document.createElement('div');
+          dot.className='armor-dot '+(pc.armorUsed?'armor-off':'armor-on');
+          div.appendChild(dot);
+        }
+        cell.appendChild(div);
+      }
+      cell.addEventListener('click',()=>onCell(r,c));
+      bd.appendChild(cell);
+    }
+  }
+}
+
+function updateHUD(){
+  document.getElementById('badge-p1').classList.toggle('active',G.cur===1);
+  document.getElementById('badge-p2').classList.toggle('active',G.cur===2);
+  const ph=G.phase;
+  let label='';
+  if(ph==='select') label=G.reviveMode?'Select captured piece':'Select a piece';
+  else if(ph==='direction') label=(G.selected&&G.selected.type==='KING')?'King — pick a direction (no dice)':'Pick a direction arrow';
+  else if(ph==='roll') label=autoRoll?'Rolling…':'Roll the dice';
+  else if(ph==='ninja-attack') label=autoRoll?'Ninja attack rolling…':'Ninja attack — roll 1';
+  document.getElementById('phase-bar').textContent=label;
+  document.getElementById('turn-center').textContent=
+    G.cur===1?'YOUR TURN':(selectedOpponent==='ai'?'AI TURN':'P2 TURN');
+  const needRoll=(ph==='roll'||ph==='ninja-attack');
+  document.getElementById('roll-btn').disabled=!needRoll||autoRoll;
+  if(needRoll&&autoRoll&&!G._autoRolling){
+    G._autoRolling=true;
+    setTimeout(()=>{G._autoRolling=false;rollDice();},350);
+  }
+}
+
+function inB(r,c){return r>=0&&r<6&&c>=0&&c<6}
+
+/* ═══════════════════ CELL CLICK ═══════════════════ */
+// G.dirHighlights: array of {r,c,dr,dc} — immediate neighbour cells showing a direction arrow
+function onCell(r,c){
+  if(selectedOpponent==='ai'&&G.cur===2) return;
+  if(G.phase==='select'){
+    if(G.reviveMode){doReviveSelect(r,c);return;}
+    const pc=G.board[r][c];
+    if(pc&&pc.pl===G.cur){
+      if(G.selected===pc){
+        // deselect
+        G.selected=null;G.dirHighlights=[];G.atkhighlights=[];
+        G.phase='select';renderBoard();updateHUD();
+      } else {
+        G.selected=pc;computeHighlights(pc);G.phase='direction';
+        renderBoard();updateHUD();
+      }
+    } else {
+      G.selected=null;G.dirHighlights=[];G.atkhighlights=[];
+      renderBoard();updateHUD();
+    }
+  } else if(G.phase==='direction'){
+    // check direction click
+    const dh=G.dirHighlights||[];
+    const dMatch=dh.find(d=>d.r===r&&d.c===c);
+    const isAT=G.atkhighlights.some(h=>h[0]===r&&h[1]===c);
+
+    if(isAT&&G.selected.type==='NINJA'){
+      G.ninjaAttackTarget={row:r,col:c};G.phase='ninja-attack';
+      G.dirHighlights=[];G.atkhighlights=[];renderBoard();updateHUD();return;
+    }
+    if(dMatch){
+      // direction chosen — store dr/dc as target direction
+      G.targetDir={dr:dMatch.dr,dc:dMatch.dc};
+      if(G.selected.type==='KING'){
+        // king always moves exactly 1 in that direction
+        const nr=G.selected.row+dMatch.dr,nc=G.selected.col+dMatch.dc;
+        addLog(`P${G.cur} King moves — no dice needed`);
+        G.dirHighlights=[];G.atkhighlights=[];
+        animateMove(G.selected,nr,nc,()=>endTurn(false));
+      } else {
+        G.phase='roll';G.dirHighlights=[];G.atkhighlights=[];renderBoard();updateHUD();
+      }
+      return;
+    }
+    // clicked elsewhere — check if it's own piece (reselect) or deselect
+    const pc2=G.board[r][c];
+    if(pc2&&pc2.pl===G.cur&&pc2!==G.selected){
+      G.selected=pc2;computeHighlights(pc2);renderBoard();updateHUD();
+    } else {
+      G.selected=null;G.dirHighlights=[];G.atkhighlights=[];
+      G.phase='select';renderBoard();updateHUD();
+    }
+  }
+}
+
+/* ═══════════════════ HIGHLIGHTS ═══════════════════ */
+// For non-King pieces we show direction arrows on the immediate neighbour cell
+// in each valid direction. Clicking that cell sets the direction; dice decides distance.
+function computeHighlights(pc){
+  G.highlights=[];G.atkhighlights=[];G.dirHighlights=[];
+  if(pc.type==='KING'){
+    // King: show each reachable cell directly (1 step, any direction)
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc])=>{
+      const nr=pc.row+dr,nc=pc.col+dc;
+      if(inB(nr,nc)){const t=G.board[nr][nc];if(!t||t.pl!==pc.pl)G.dirHighlights.push({r:nr,c:nc,dr,dc});}
+    });
+  } else if(pc.type==='NINJA'){
+    // Ninja moves diagonally — show direction arrow on first diagonal step
+    [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([dr,dc])=>{
+      const nr=pc.row+dr,nc=pc.col+dc;
+      if(inB(nr,nc)){
+        const t=G.board[nr][nc];
+        // can move in this direction if first cell is empty or enemy
+        if(!t||t.pl!==pc.pl) G.dirHighlights.push({r:nr,c:nc,dr,dc});
+      }
+    });
+    // Ninja attack: orthogonal adjacents with enemy
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      const nr=pc.row+dr,nc=pc.col+dc;
+      if(inB(nr,nc)){const t=G.board[nr][nc];if(t&&t.pl!==pc.pl)G.atkhighlights.push([nr,nc]);}
+    });
+  } else if(pc.type==='SAMURAI'){
+    // Samurai moves orthogonally — show direction arrow on first step in each valid direction
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([dr,dc])=>{
+      const nr=pc.row+dr,nc=pc.col+dc;
+      if(inB(nr,nc)){
+        const t=G.board[nr][nc];
+        if(!t||t.pl!==pc.pl) G.dirHighlights.push({r:nr,c:nc,dr,dc});
+      }
+    });
+  }
+}
+
+/* ═══════════════════ PIECE MOVEMENT ANIMATION ═══════════════════ */
+function getCellCenter(row,col){
+  const cell=document.getElementById('board').querySelector(`[data-r="${row}"][data-c="${col}"]`);
+  if(!cell)return null;
+  const r=cell.getBoundingClientRect();
+  return{x:r.left+r.width/2,y:r.top+r.height/2};
+}
+
+// Legacy single-step wrapper (King moves, ninja attacks)
+function animateMove(pc,toRow,toCol,callback){
+  animateAlongPath(pc,[{r:toRow,c:toCol}],callback);
+}
+
+/* ═══════════════════ DICE ROLL ═══════════════════ */
+function rollDice(){
+  const isNinja=G.selected&&G.selected.type==='NINJA';
+  const maxRoll=isNinja?3:6;
+  const val=Math.floor(Math.random()*maxRoll)+1;
+  G.dice=val;
+  renderSmallDice(val);
+  addLog(`P${G.cur} rolled ${val}`);
+  const isP1=G.cur===1;
+
+  showDiceOverlay(val,isP1,maxRoll,()=>{
+    if(G.phase==='ninja-attack'){
+      if(val===1){
+        addLog('Ninja attack succeeds!');
+        animateMove(G.selected,G.ninjaAttackTarget.row,G.ninjaAttackTarget.col,()=>{
+          G.ninjaAttackTarget=null;endTurn(false);
+        });
+      } else {
+        addLog('Ninja attack failed — turn ends');
+        G.ninjaAttackTarget=null;endTurn(false);
+      }
+      return;
+    }
+    if(val===6){
+      showSixPopup();
+      return;
+    }
+    executePieceMove(val);
+  });
+}
+
+/* ═══════════════════ CINEMATIC DICE OVERLAY ═══════════════════ */
+const DICE_MAP={
+  1:[[1,1]],2:[[0,0],[2,2]],3:[[0,0],[1,1],[2,2]],
+  4:[[0,0],[0,2],[2,0],[2,2]],5:[[0,0],[0,2],[1,1],[2,0],[2,2]],
+  6:[[0,0],[0,2],[1,0],[1,2],[2,0],[2,2]]
+};
+let diceCallback=null,diceReady=false;
+
+function showDiceOverlay(finalVal,isP1,maxFaces,cb){
+  // Support old 3-arg calls: showDiceOverlay(val,isP1,cb)
+  if(typeof maxFaces==='function'){cb=maxFaces;maxFaces=6;}
+  diceCallback=cb;diceReady=false;
+  const ov=document.getElementById('dice-overlay');
+  const big=document.getElementById('dice-big');
+  const label=document.getElementById('dice-player-label');
+  const numEl=document.getElementById('dice-result-val');
+  const hint=document.getElementById('dice-tap-hint');
+  const color=isP1?'#e74c3c':'#3498db';
+  const borderC=isP1?'rgba(231,76,60,0.65)':'rgba(52,152,219,0.65)';
+  const bgC=isP1?'rgba(231,76,60,0.08)':'rgba(52,152,219,0.08)';
+  const glow=isP1?'rgba(231,76,60,0.2)':'rgba(52,152,219,0.2)';
+  const pName=isP1?'Player 1':(selectedOpponent==='ai'?'AI':'Player 2');
+
+  label.textContent=`${pName} rolling…`;
+  label.style.color=color;
+  numEl.style.color=color;
+  numEl.classList.remove('pop');
+  hint.classList.remove('show');
+  big.style.borderColor=borderC;
+  big.style.background=bgC;
+  big.style.boxShadow=`0 0 40px ${glow}, inset 0 0 20px ${glow}`;
+
+  // build dots
+  big.innerHTML='';
+  for(let i=0;i<9;i++){
+    const d=document.createElement('div');
+    d.className='big-dot off';
+    d.style.background=color;
+    big.appendChild(d);
+  }
+
+  ov.classList.add('show');
+
+  // scramble faces then settle on final
+  let tick=0,maxTick=14;
+  function scramble(){
+    if(tick>=maxTick){
+      // Final face
+      setOverlayFace(big,finalVal,color);
+      void big.offsetWidth;
+      big.classList.remove('spin');
+      big.classList.add('spin');
+      numEl.textContent=finalVal;
+      label.textContent=`${pName} rolled`;
+      setTimeout(()=>{
+        numEl.classList.add('pop');
+        setTimeout(()=>{
+          hint.classList.add('show');
+          diceReady=true;
+          // auto-dismiss after 1.1s
+          setTimeout(()=>dismissDice(),1100);
+        },180);
+      },350);
+      return;
+    }
+    const fake=Array.from({length:maxFaces},(_,i)=>i+1)[Math.floor(Math.random()*maxFaces)];
+    setOverlayFace(big,fake,color);
+    if(tick%4===0){
+      big.classList.remove('spin');void big.offsetWidth;big.classList.add('spin');
+    }
+    tick++;
+    setTimeout(scramble,25+tick*14);
+  }
+  scramble();
+}
+
+function setOverlayFace(el,val,color){
+  const dots=el.querySelectorAll('.big-dot');
+  const grid=Array(9).fill(false);
+  (DICE_MAP[val]||[]).forEach(([r,c])=>grid[r*3+c]=true);
+  dots.forEach((d,i)=>{d.style.background=color;d.classList.toggle('off',!grid[i]);});
+}
+
+function dismissDice(){
+  if(!diceReady)return;
+  diceReady=false;
+  document.getElementById('dice-overlay').classList.remove('show');
+  const cb=diceCallback;diceCallback=null;
+  if(cb)setTimeout(cb,60);
+}
+
+/* ═══════════════════ SMALL SIDEBAR DICE ═══════════════════ */
+function renderSmallDice(val){
+  const face=document.getElementById('dice-face-small');
+  face.innerHTML='';
+  const grid=Array(9).fill(false);
+  if(val&&DICE_MAP[val]) DICE_MAP[val].forEach(([r,c])=>grid[r*3+c]=true);
+  grid.forEach(on=>{
+    const d=document.createElement('div');d.className='dot'+(on?'':' off');face.appendChild(d);
+  });
+}
+
+/* ═══════════════════ SIX POPUP ═══════════════════ */
+function showSixPopup(){
+  const caps=G.captured[G.cur];
+  const hasRevivable=caps.length>0;
+  const sub=document.getElementById('six-sub');
+  const revSec=document.getElementById('six-revive-section');
+  const revBtns=document.getElementById('six-revive-btns');
+
+  sub.textContent=hasRevivable
+    ?'Walk 6 steps, revive a fallen piece, or pass the turn'
+    :'No pieces to revive — walk 6 steps or pass the turn';
+
+  // build revive buttons
+  revBtns.innerHTML='';
+  if(hasRevivable){
+    caps.forEach(pc=>{
+      const sp=getStartPos(pc.type,pc.pl);
+      const blocked=!!G.board[sp.row][sp.col];
+      const btn=document.createElement('button');
+      btn.className='six-big-btn';
+      btn.disabled=blocked;
+      btn.title=blocked?'Start position is occupied':('Revive '+pc.type);
+      btn.innerHTML=`<span class="six-piece-icon">${SYM[pc.type]}</span><span class="six-piece-name">${pc.type}${blocked?' (blocked)':''}</span>`;
+      btn.onclick=()=>sixChooseRevive(pc);
+      revBtns.appendChild(btn);
+    });
+    revSec.style.display='';
+  } else {
+    revSec.style.display='none';
+  }
+
+  document.getElementById('six-overlay').classList.add('show');
+}
+
+function hideSixPopup(){
+  document.getElementById('six-overlay').classList.remove('show');
+}
+
+function sixChooseWalk(){
+  hideSixPopup();
+  addLog(`P${G.cur} walks 6 steps`);
+  executePieceMove(6);
+}
+
+function sixChooseRevive(pc){
+  hideSixPopup();
+  const sp=getStartPos(pc.type,pc.pl);
+  if(G.board[sp.row][sp.col]){addLog('Start position occupied — cannot revive');endTurn(false);return;}
+  pc.alive=true;pc.row=sp.row;pc.col=sp.col;
+  G.captured[G.cur]=G.captured[G.cur].filter(p=>p!==pc);
+  syncBoard();addLog(`${pc.type} revived for P${G.cur}!`);updateCapturedUI();
+  endTurn(false);
+}
+
+function sixChooseSkip(){
+  hideSixPopup();
+  addLog(`P${G.cur} passes the turn`);
+  endTurn(false);
+}
+
+function chooseSix(choice){/* legacy stub, no longer used */}
+function highlightCapturedForRevive(){}
+function doRevivePiece(pc){sixChooseRevive(pc);}
+function doReviveSelect(){}
+function getStartPos(type,pl){
+  return(pl===1
+    ?{KING:{row:5,col:5},SAMURAI:{row:4,col:5},NINJA:{row:5,col:4}}
+    :{KING:{row:0,col:0},SAMURAI:{row:1,col:0},NINJA:{row:0,col:1}}
+  )[type];
+}
+
+function executePieceMove(val){
+  const pc=G.selected;
+  const dir=G.targetDir;
+  if(!dir){endTurn(false);return;}
+  const dr=dir.dr,dc=dir.dc;
+  let steps=(pc.type==='NINJA')?Math.min(val,3):val;
+
+  // Compute the full step-by-step path including bounces
+  const path=computePath(pc,dr,dc,steps);
+  animateAlongPath(pc,path,()=>endTurn(false));
+}
+
+// Returns array of {r,c} positions the piece visits step by step (excluding start).
+// Rules:
+//   Ninja: skips over enemy pieces, bounces at walls/own-pieces only, no capture via movement.
+//   Samurai/King: enemy blocks like a wall UNLESS it's the last step (remaining==1) → capture.
+//     If enemy is not the last step, bounce back treating enemy as wall.
+function computePath(pc,dr,dc,steps){
+  const path=[];
+  let r=pc.row,c=pc.col;
+  let cdr=dr,cdc=dc;
+  let remaining=steps;
+  const isNinja=pc.type==='NINJA';
+
+  while(remaining>0){
+    let nr=r+cdr,nc=c+cdc;
+
+    // Hit board edge — bounce direction
+    if(!inB(nr,nc)){
+      cdr=-cdr;cdc=-cdc;
+      nr=r+cdr;nc=c+cdc;
+      if(!inB(nr,nc))break; // corner trap, stop
+    }
+
+    const t=G.board[nr][nc];
+
+    if(isNinja){
+      // Ninja: own piece is a wall (bounce). Enemies are transparent (skip over).
+      if(t&&t.pl===pc.pl){
+        // own piece blocks — bounce
+        cdr=-cdr;cdc=-cdc;
+        nr=r+cdr;nc=c+cdc;
+        if(!inB(nr,nc))break;
+        const t2=G.board[nr][nc];
+        if(t2&&t2.pl===pc.pl)break; // blocked both ways
+      }
+      path.push({r:nr,c:nc});
+      r=nr;c=nc;remaining--;
+    } else {
+      // Samurai/King: own piece is always a wall — stop before it
+      if(t&&t.pl===pc.pl) break;
+
+      if(t&&t.pl!==pc.pl){
+        // Enemy piece found
+        if(remaining===1){
+          // Landing exactly on enemy → capture
+          path.push({r:nr,c:nc,capture:true});
+          break;
+        } else {
+          // Overshot — enemy acts as wall, bounce back
+          cdr=-cdr;cdc=-cdc;
+          // Don't step onto enemy, bounce from current position
+          const bnr=r+cdr,bnc=c+cdc;
+          if(!inB(bnr,bnc))break;
+          const bt=G.board[bnr][bnc];
+          if(bt&&bt.pl===pc.pl)break; // blocked
+          path.push({r:bnr,c:bnc});
+          r=bnr;c=bnc;remaining--;
+          continue;
+        }
+      }
+
+      // Empty cell
+      path.push({r:nr,c:nc});
+      r=nr;c=nc;remaining--;
+    }
+  }
+  return path;
+}
+
+// Animate piece along path step by step, execute capture at each step if needed
+function animateAlongPath(pc,path,callback){
+  if(!path.length){if(callback)callback();return;}
+
+  // Hide source piece on board
+  const srcCell=document.getElementById('board').querySelector(`[data-r="${pc.row}"][data-c="${pc.col}"]`);
+  const srcPieceEl=srcCell?srcCell.querySelector('.piece-el'):null;
+  if(srcPieceEl)srcPieceEl.style.opacity='0';
+
+  const fly=document.getElementById('flying-piece');
+  const SIZE=30;
+  fly.textContent=SYM[pc.type];
+  fly.style.color=pc.pl===1?P1C:P2C;
+  fly.style.textShadow=`0 0 14px ${pc.pl===1?'rgba(231,76,60,0.8)':'rgba(52,152,219,0.8)'}`;
+  fly.style.width=SIZE+'px';fly.style.height=SIZE+'px';
+
+  let stepIdx=0;
+  let curR=pc.row,curC=pc.col;
+
+  function doStep(){
+    if(stepIdx>=path.length){
+      fly.style.opacity='0';
+      doMove(pc,curR,curC);
+      if(callback)callback();
+      return;
+    }
+    const {r:nr,c:nc}=path[stepIdx];
+    stepIdx++;
+
+    const from=getCellCenter(curR,curC);
+    const to=getCellCenter(nr,nc);
+    if(!from||!to){curR=nr;curC=nc;doStep();return;}
+
+    const dx=to.x-from.x,dy=to.y-from.y;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const dur=Math.max(120,Math.min(280,dist*1.1));
+
+    // check if there's an enemy to capture at this step (only if path marks it)
+    const willCapture=path[stepIdx-1].capture&&G.board[nr][nc]&&G.board[nr][nc].pl!==pc.pl;
+    if(willCapture){
+      // dim enemy visually as we approach
+      const tgtCell=document.getElementById('board').querySelector(`[data-r="${nr}"][data-c="${nc}"]`);
+      const tgtEl=tgtCell?tgtCell.querySelector('.piece-el'):null;
+      if(tgtEl)tgtEl.style.opacity='0.2';
+    }
+
+    const fromPos=getCellCenter(curR,curC);
+    fly.style.left=(fromPos.x-SIZE/2)+'px';
+    fly.style.top=(fromPos.y-SIZE/2)+'px';
+    fly.style.opacity='1';
+
+    const kf=[
+      {left:(fromPos.x-SIZE/2)+'px',top:(fromPos.y-SIZE/2)+'px',opacity:1,transform:'scale(1.2)'},
+      {left:(to.x-SIZE/2)+'px',top:(to.y-SIZE/2)+'px',opacity:1,transform:'scale(1.0)'}
+    ];
+    const anim=fly.animate(kf,{duration:dur,easing:'cubic-bezier(0.4,0,0.2,1)',fill:'forwards'});
+    anim.onfinish=()=>{
+      anim.cancel();
+      fly.style.left=(to.x-SIZE/2)+'px';
+      fly.style.top=(to.y-SIZE/2)+'px';
+      // Execute capture now if needed
+      if(willCapture){const tgt=G.board[nr][nc];if(tgt&&tgt.pl!==pc.pl)captureAt(nr,nc,tgt);}
+      // Update internal board position mid-path (without full render to keep flying piece visible)
+      G.board[curR][curC]=null;
+      pc.row=nr;pc.col=nc;
+      G.board[nr][nc]=pc;
+      curR=nr;curC=nc;
+      // small pause between steps
+      setTimeout(doStep,45);
+    };
+  }
+  doStep();
+}
+
+function doBounce(r,c,dr,dc,rem){
+  let cdr=dr,cdc=dc;
+  for(let i=0;i<rem;i++){
+    let nr2=r+cdr,nc2=c+cdc;
+    if(!inB(nr2,nc2)){cdr=-cdr;cdc=-cdc;nr2=r+cdr;nc2=c+cdc;}
+    if(!inB(nr2,nc2))break;
+    if(G.board[nr2][nc2])break;
+    r=nr2;c=nc2;
+  }
+  return[r,c];
+}
+function doMove(pc,r,c){
+  const t=G.board[r][c];
+  if(t&&t.pl!==pc.pl)captureAt(r,c,t);
+  doMoveRaw(pc,r,c);
+}
+function doMoveRaw(pc,r,c){
+  G.board[pc.row][pc.col]=null;pc.row=r;pc.col=c;G.board[r][c]=pc;renderBoard();
+}
+function captureAt(r,c,tgt){
+  if(tgt.type==='SAMURAI'&&!tgt.armorUsed){
+    tgt.armorUsed=true;G.board[r][c]=null;
+    addLog(`P${tgt.pl} Samurai armor absorbs the hit!`);return;
+  }
+  tgt.alive=false;G.board[r][c]=null;
+  const capby=tgt.pl===1?2:1;
+  G.captured[capby].push(tgt);
+  addLog(`P${tgt.pl} ${tgt.type} captured!`);updateCapturedUI();
+  if(tgt.type==='KING'){
+    const w=capby===1?'Player 1':(selectedOpponent==='ai'?'AI':'Player 2');
+    setTimeout(()=>showWin(w),450);
+  }
+}
+function updateCapturedUI(){
+  for(let p=1;p<=2;p++){
+    const el=document.getElementById('p'+p+'-captured');el.innerHTML='';
+    G.captured[p].forEach(pc=>{
+      const s=document.createElement('span');s.className='cap-piece';
+      s.textContent=SYM[pc.type];s.title=pc.type;
+      s.style.color=pc.pl===1?P1C:P2C;el.appendChild(s);
+    });
+  }
+}
+function endTurn(extra){
+  G.selected=null;G.highlights=[];G.atkhighlights=[];G.dirHighlights=[];
+  G.targetCell=null;G.targetDir=null;G.dice=null;G.ninjaAttackTarget=null;
+  G.reviveMode=false;G._autoRolling=false;G.aiLocked=false;
+  document.getElementById('roll-btn').disabled=true;
+  renderSmallDice(null);
+  if(!extra)G.cur=G.cur===1?2:1;
+  G.phase='select';renderBoard();updateHUD();
+  if(selectedOpponent==='ai'&&G.cur===2)scheduleAI();
+}
+function addLog(msg){
+  const log=document.getElementById('log');
+  const p=document.createElement('p');p.textContent=msg;log.prepend(p);
+}
+function showWin(w){
+  document.getElementById('win-title').textContent=w+' Wins';
+  document.getElementById('win-overlay').classList.add('show');
+}
+
+/* ═══════════════════ AI ENGINE ═══════════════════ */
+function scheduleAI(){
+  if(G.aiLocked)return; // prevent double-scheduling
+  G.aiLocked=true;
+  const t=document.getElementById('ai-thinking');t.classList.add('show');
+  setTimeout(()=>{t.classList.remove('show');runAITurn();},650+Math.random()*500);
+}
+
+function runAITurn(){
+  const myPieces=[];
+  for(let k in G.pieces[2])if(G.pieces[2][k].alive)myPieces.push(G.pieces[2][k]);
+  if(!myPieces.length){G.aiLocked=false;endTurn(false);return;}
+
+  let bestMove=null,bestScore=-Infinity;
+  myPieces.forEach(pc=>{
+    G.selected=pc;computeHighlights(pc);
+    (G.dirHighlights||[]).forEach(({r,c,dr,dc})=>{
+      const t=G.board[r][c];let score=0;
+      if(t&&t.pl===1){if(t.type==='KING')score=1000;else if(t.type==='SAMURAI')score=t.armorUsed?30:10;else score=20;}
+      const ek=G.pieces[1].king;
+      score+=(10-Math.abs(r-ek.row)-Math.abs(c-ek.col));
+      if(score>bestScore){bestScore=score;bestMove={pc,dr,dc,isAtk:false};}
+    });
+    G.atkhighlights.forEach(([r,c])=>{
+      const t=G.board[r][c];let score=0;
+      if(t&&t.pl===1){if(t.type==='KING')score=1000;else if(t.type==='SAMURAI')score=t.armorUsed?30:10;else score=20;}
+      const ek=G.pieces[1].king;
+      score+=(10-Math.abs(r-ek.row)-Math.abs(c-ek.col));
+      if(score>bestScore){bestScore=score;bestMove={pc,r,c,isAtk:true};}
+    });
+  });
+  G.dirHighlights=[];G.atkhighlights=[];
+
+  if(!bestMove){G.selected=null;G.phase='select';G.aiLocked=false;endTurn(false);return;}
+  G.selected=bestMove.pc;computeHighlights(bestMove.pc);
+
+  // ── Ninja orthogonal attack ──
+  if(bestMove.isAtk&&bestMove.pc.type==='NINJA'){
+    G.ninjaAttackTarget={row:bestMove.r,col:bestMove.c};
+    G.phase='ninja-attack';
+    const val=Math.floor(Math.random()*6)+1;
+    G.dice=val;renderSmallDice(val);
+    addLog(`AI rolled ${val} for ninja attack`);
+    // Show dice overlay; after dismiss, execute result
+    showDiceOverlay(val,false,6,()=>{
+      if(val===1){
+        addLog('AI ninja attack succeeds!');
+        const path=[{r:G.ninjaAttackTarget.row,c:G.ninjaAttackTarget.col,capture:true}];
+        animateAlongPath(G.selected,path,()=>{G.ninjaAttackTarget=null;endTurn(false);});
+      } else {
+        addLog('AI ninja attack failed');
+        G.ninjaAttackTarget=null;endTurn(false);
+      }
+    });
+    return;
+  }
+
+  // ── King move (no dice) ──
+  if(bestMove.pc.type==='KING'){
+    const nr=bestMove.pc.row+bestMove.dr,nc=bestMove.pc.col+bestMove.dc;
+    const path=[{r:nr,c:nc,capture:!!G.board[nr][nc]}];
+    animateAlongPath(bestMove.pc,path,()=>{addLog('AI King moved');endTurn(false);});
+    return;
+  }
+
+  // ── Normal move: show dice overlay, then move in the callback ──
+  G.targetDir={dr:bestMove.dr,dc:bestMove.dc};
+  G.phase='roll';updateHUD();
+
+  const isNinja=bestMove.pc.type==='NINJA';
+  const maxRoll=isNinja?3:6;
+  const val=Math.floor(Math.random()*maxRoll)+1;
+  G.dice=val;renderSmallDice(val);
+  addLog(`AI rolled ${val}`);
+
+  // Show the dice animation to the player; only execute move once it's done
+  showDiceOverlay(val,false,maxRoll,()=>{
+    if(val===6&&!isNinja){
+      // AI handles 6 silently: decide and act
+      const caps=G.captured[2];
+      const revivable=caps.filter(p=>{const sp=getStartPos(p.type,p.pl);return !G.board[sp.row][sp.col];});
+      if(revivable.length&&Math.random()<0.5){
+        const pick=revivable[Math.floor(Math.random()*revivable.length)];
+        addLog('AI revives '+pick.type);
+        const sp=getStartPos(pick.type,pick.pl);
+        pick.alive=true;pick.row=sp.row;pick.col=sp.col;
+        G.captured[2]=G.captured[2].filter(p=>p!==pick);
+        syncBoard();updateCapturedUI();
+        endTurn(false);
+      } else {
+        addLog('AI walks 6 steps');
+        executePieceMove(6);
+      }
+    } else {
+      executePieceMove(val);
+    }
+  });
+}
+</script>
+</body>
+</html>
